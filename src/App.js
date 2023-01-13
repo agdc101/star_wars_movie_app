@@ -13,7 +13,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch('https://swapi.dev/api/film');
+      const response = await fetch('https://swapi.dev/api/films');
       if (!response.ok) {
         throw new Error('Error! - There\'s a disturbance in the force');
       }
@@ -34,20 +34,12 @@ function App() {
     setIsLoading(false);
   }
 
+  // Page content handling.
   let content = <p>Click the fetch button!</p>
 
-  if (movies.length > 0) {
-    content = <MoviesList movies={movies} />
-  } else {
-    <p><i>No Movies Found.</i></p>
-  }
-
-  if (error) {
-    content = <p>{error}</p>
-  }
-  if (isLoading) {
-    content = <p><i>Loading...</i></p>
-  }
+  movies.length > 0 ? content = <MoviesList movies={movies} /> : <p><i>No Movies Found.</i></p>;
+  error ? content = <p>{error}</p> : content = <p>{content}</p>;
+  isLoading ? content = <p><i>Loading...</i></p> : content = <p>{content}</p>;
 
   return (
     <React.Fragment>
