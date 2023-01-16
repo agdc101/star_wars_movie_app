@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import MoviesList from './components/MoviesList';
+import AddMovie from './components/AddMovie';
 import './App.css';
 
 function App() {
@@ -8,47 +9,76 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  async function fetchMovies() {
+  const fetchMoviesHandler = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const response = await fetch('https://swapi.dev/api/films');
+      const response = await fetch('https://react-http-test-5443a-default-rtdb.firebaseio.com/movies.json');
       if (!response.ok) {
-        throw new Error('Error! - There\'s a disturbance in the force');
+        throw new Error('Something went wrong!');
       }
 
       const data = await response.json();
-      const transformedMovies = data.results.map(movieData => { // this function is renaming the api data properties. not mandatory.
-        return {
-          id: movieData.episode_id,
-          title: movieData.title,
-          openingText: movieData.opening_crawl,
-          releaseDate: movieData.release_date
-        }
-      });
-      setMovies(transformedMovies);
-    } catch (err) {
-      setError(err.message);
+      console.log(data);
+
+      const moviesLoaded = [];
+
+      for (const key in data) { // data retrieved from back-end API is pushed into the movies array.
+        moviesLoaded.push({
+          id: key,
+          title: data[key].title,
+          openingText: data[key].openingText,
+          releaseDate: data[key].releaseDate
+        })
+      }
+      console.log(moviesLoaded);
+
+      setMovies(moviesLoaded);
+    } catch (error) {
+      setError(error.message);
     }
     setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchMoviesHandler();
+  }, [fetchMoviesHandler]);
+
+  async function addMovieHandler(movie) { // movie is defined and passed upto here from AddMovie.js.
+    const response = await fetch('https://react-http-test-5443a-default-rtdb.firebaseio.com/movies.json', {
+      method: 'POST',
+      body: JSON.stringify(movie),
+      headers:{
+        'Content-Type':'application/json'
+      }
+    });
+    const data = await response.json(); // response data only really needed for validation purposes.
+    console.log(data, response.status);
   }
 
-  // Page content handling.
-  let content = <p>Click the fetch button!</p>
+  let content = <p>Found no movies.</p>;
 
-  movies.length > 0 ? content = <MoviesList movies={movies} /> : <p><i>No Movies Found.</i></p>;
-  error ? content = <p>{error}</p> : content = <p>{content}</p>;
-  isLoading ? content = <p><i>Loading...</i></p> : content = <p>{content}</p>;
+  if (movies.length > 0) {
+    content = <MoviesList movies={movies} />;
+  }
+
+  if (error) {
+    content = <p>{error}</p>;
+  }
+
+  if (isLoading) {
+    content = <p>Loading...</p>;
+  }
 
   return (
     <React.Fragment>
       <section>
-        <button onClick={fetchMovies}>Get Star Wars Movies</button>
+        <AddMovie onAddMovie={addMovieHandler} />
       </section>
       <section>
-        {content}
+        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
+      <section>{content}</section>
     </React.Fragment>
   );
 }
